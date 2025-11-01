@@ -1,0 +1,704 @@
+\documentclass[aspectratio=169]{beamer}
+
+% Theme and Color Scheme
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% University of Colorado Boulder Colors
+\definecolor{CUGold}{RGB}{207,184,124}
+\definecolor{CUBlack}{RGB}{0,0,0}
+\definecolor{CUDarkGray}{RGB}{86,90,92}
+\definecolor{CULightGray}{RGB}{162,164,163}
+
+% Apply CU Boulder color scheme
+\setbeamercolor{palette primary}{bg=CUGold,fg=CUBlack}
+\setbeamercolor{palette secondary}{bg=CUDarkGray,fg=white}
+\setbeamercolor{palette tertiary}{bg=CUBlack,fg=CUGold}
+\setbeamercolor{palette quaternary}{bg=CUGold,fg=CUBlack}
+\setbeamercolor{structure}{fg=CUBlack}
+\setbeamercolor{section in toc}{fg=CUBlack}
+\setbeamercolor{subsection in head/foot}{bg=CUDarkGray,fg=white}
+
+% Title colors
+\setbeamercolor{title}{fg=CUGold,bg=CUBlack}
+\setbeamercolor{frametitle}{fg=CUBlack,bg=CUGold}
+
+% Block colors
+\setbeamercolor{block title}{bg=CUGold,fg=CUBlack}
+\setbeamercolor{block body}{bg=CULightGray!20,fg=CUBlack}
+
+% Alert block colors
+\setbeamercolor{block title alerted}{bg=CUBlack,fg=CUGold}
+\setbeamercolor{block body alerted}{bg=CUDarkGray!20,fg=CUBlack}
+
+% Item colors
+\setbeamercolor{item}{fg=CUGold}
+\setbeamercolor{subitem}{fg=CUDarkGray}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Configure listings to handle UTF-8
+\lstset{
+    inputencoding=utf8,
+    extendedchars=true,
+    literate=
+        {²}{{\textsuperscript{2}}}1
+        {³}{{\textsuperscript{3}}}1
+        {°}{{\textdegree}}1
+        {±}{{\textpm}}1
+        {×}{{\texttimes}}1
+        {÷}{{\textdiv}}1
+        {≤}{{\leq}}1
+        {≥}{{\geq}}1
+        {≠}{{\neq}}1
+        {∞}{{\infty}}1
+}
+
+% Define CODE macro for Python code
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\scriptsize,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!50!black}\itshape,
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{white},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    frame=single,
+    tabsize=4,
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false,
+    escapeinside={(*@}{@*)},
+    xleftmargin=0.5cm,
+    xrightmargin=0.5cm,
+    inputencoding=utf8,
+    extendedchars=true
+}
+
+\lstset{style=pythonstyle}
+
+% CODE macro to include external Python files
+\newcommand{\CODE}[1]{\lstinputlisting{code/#1}}
+% Title Information
+\title{CSCA 5622 - Introduction to Machine Learning}
+\subtitle{\textbf{Supervised Learning}}
+\author{Dyego Fernandes de Sousa}
+\institute{University of Colorado Boulder}
+\date{\today}
+
+% Footer customization
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\begin{document}
+\setbeamertemplate{caption}[numbered]
+
+% Title Slide
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Problem Statement \& Dataset Overview}
+The goal of this project is to analyze the relationship between financial, environmental variables and ESG outcomes for a set of companies.
+
+\textbf{Specifically, the tasks are:}
+\begin{itemize}
+    \item \textbf{Regression}: To predict the ESG score of a company using its revenue and GHG emissions, aiming to quantify how these factors influence overall sustainability performance.
+    \item \textbf{Classification}: To categorize companies into ESG risk levels based on their revenues and GHG emission figures, identifying key indicators associated with higher sustainability risks.
+\end{itemize}
+
+Both tasks will provide insights on how economic and environmental data are associated with ESG scoring and risk classification, supporting better data-driven decisions.
+
+\vspace{0.5em}
+\textbf{Dataset\footnotemark Overview:}
+CSV file containing $251$ rows and $57$ non-normalized features. Many rows containing empty values. Inexistense of target variables.
+
+\end{frame}
+
+%%EDA
+\begin{frame}[shrink=35]{Exploratory Data Analysis (EDA)}
+    \textbf{Preprocessing:}
+    \vspace{0.5em}
+    \textit{Calculating the Target variables:}
+    \begin{itemize}
+        \item \textbf{esg\_score}: A function of $Scope1plus2Total$ and $revenuesghgco$, later normalized to be between $0$ and $100$.
+        \item \textbf{esg\_risk}: Category based on esg\_score: LOW, MEDIUM-LOW, MEDIUM, MEDIUM-HIGH, and HIGH.
+    \end{itemize}
+
+    \vspace{0.5em}
+    \textbf{Raw Dataset}
+    \begin{columns}[T]
+
+        \begin{column}{0.48\textwidth}
+            \vspace{0.5em}
+            \textbf{ESG Score Distribution}
+            \begin{center}
+            {\footnotesize
+            \begin{tabular}{|l|r|}
+            \hline
+            \textbf{Statistic} & \textbf{Value} \\
+            \hline
+            Count & 251.00 \\
+            Mean & 90.64 \\
+            Std Dev & 15.76 \\
+            Min & 0.00 \\
+            25\% & 90.14 \\
+            Median & 97.25 \\
+            75\% & 98.10 \\
+            Max & 100.00 \\
+            \hline
+            \end{tabular}
+            }
+            \end{center}
+            \vspace{1em}
+
+            \textbf{Risk Distribution}
+            \begin{center}
+            {\footnotesize
+            \begin{tabular}{|l|r|}
+            \hline
+            \textbf{Risk Level} & \textbf{Count} \\
+            \hline
+            HIGH & 23 \\
+            MEDIUM-HIGH & 16 \\
+            MEDIUM & 35 \\
+            MEDIUM-LOW & 119 \\
+            LOW & 58 \\
+            \hline
+            \textbf{Total} & \textbf{251} \\
+            \hline
+            \end{tabular}
+            }
+            \end{center}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[histo_1]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/histogram_before.png}
+                    \caption{The long tail indicates that there are numbers far apart fom the head. This usually indicates that the target data needs transformation.}
+                \centering
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[shrink=35]{Exploratory Data Analysis (EDA)}
+    \textbf{After Log Transformation}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \vspace{0.5em}
+            \textbf{ESG Score Distribution}
+            \begin{center}
+            \begin{tabular}{|l|r|}
+            \hline
+            \textbf{Statistic} & \textbf{Value} \\
+            \hline
+            Count & 251.00 \\
+            Mean & 41.56 \\
+            Std Dev & 21.73 \\
+            Min & 0.00 \\
+            25\% & 29.08 \\
+            Median & 34.80 \\
+            75\% & 56.77 \\
+            Max & 100.00 \\
+            \hline
+            \end{tabular}
+            \end{center}
+
+            \vspace{1em}
+
+            \textbf{Risk Distribution}
+            \begin{center}
+            \begin{tabular}{|l|r|}
+            \hline
+            \textbf{Risk Level} & \textbf{Count} \\
+            \hline
+            HIGH & 23 \\
+            MEDIUM-HIGH & 16 \\
+            MEDIUM & 35 \\
+            MEDIUM-LOW & 119 \\
+            LOW & 58 \\
+            \hline
+            \textbf{Total} & \textbf{251} \\
+            \hline
+            \end{tabular}
+            \end{center}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[histo_2]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/histogram_after.png}
+                    \caption{A small tail is still present, but way less concerning.}
+                \centering
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+%%Feature engineering
+\begin{frame}[shrink=14]{Feature Engineering}
+    \textbf{Dropping Columns:}
+    \begin{itemize}
+        \item \textbf{1st round} - time-series features (e.g., 2020\_food\_sales, 2020\_fs\_adjust).
+        \item \textbf{2nd round} - known meaninless features (e.g., id, brandlogos).
+        \item \textbf{3rd round} - not important features, after feature importance analysis (e.g., revenuesarea, ghgreportarea).
+        \item \textbf{4th round} - strong correlation, after feature importance analysis (e.g., esg\_score\_raw, esg\_score\_log).
+        \item \textbf{5th round} - all NaN: realzero, yearrevenuesdata
+    \end{itemize}
+    \textbf{Final set of Features for training:}
+    \begin{itemize}
+        \item \textbf{scope2emitundifferentiated}, \textbf{brands}, and \textbf{scope1+2total} after application of median imputation to handle missing values
+    \end{itemize}
+\end{frame}
+
+%% Models and Training
+\begin{frame}[shrink=8]{Models \& Training Approaches}
+
+    \textbf{Decision Trees}\\
+    \begin{itemize}
+        \item Baseline\footnotemark[4] \footnotemark[5].
+    \end{itemize}
+    \textbf{Random Forest}\\
+    \begin{itemize}
+        \item For bootstrap aggregation and to mitigate overfitting,.
+    \end{itemize}
+    \textbf{AdaBoost (Adaptive Boosting)}\\
+    \begin{itemize}
+        \item For sequential ensembling.
+    \end{itemize}
+    \textbf{XGBoost\footnotemark[5] (Extreme Gradient Boosting) - \textit{Not taught in the course, but worth trying}}\\
+    \begin{itemize}
+        \item For advanced gradient boosting and efficient parallel processing.
+    \end{itemize}
+    \textbf{Support Vector Machine\footnotemark (SVM)}\\
+    \begin{itemize}
+        \item Non-ensemble alternative for comparison.
+    \end{itemize}
+
+\end{frame}
+
+\begin{frame}[shrink=40]{Models \& Training Approaches}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{itemize}
+                \item \textbf{Train/Test} splitted as 80\% and 20\% and shuffled;
+            \end{itemize}
+
+            \vspace{0.3em}
+            \CODE{split_dataset.py}
+
+            \vspace{0.3em}
+            \begin{itemize}
+                \item \textbf{All models} were trained to perform \textbf{Regression} and \textbf{Classification}.
+            \end{itemize}
+
+            \vspace{0.3em}
+            \CODE{train_models.py}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+
+            \CODE{train_models_call.py}
+        \end{column}
+    \end{columns}
+
+
+\end{frame}
+
+%%Evaluation Metrics and Results
+\begin{frame}{Evaluation Metrics}
+    For \textbf{Regression\footnotemark[6]}:
+    \begin{itemize}
+        \item R²: Model fitness %% Explains how the model is fit, it is the percentage of the variance that is explained
+        \item RMSE: Root Mean Squared Error %% Root Mean Squared Error - Average of the squared differences between predicted and actual values. Has the same units as the target and penalizes larger errors more heavily.
+        \item MAE: Mean Absolute Error %% Mean Absolute Error - Average of the absolute differences between predicted and actual values. Has the same units as the target, is more robust to outliers.
+    \end{itemize}
+    For \textbf{Classification\footnotemark[6]}:
+    \begin{itemize}
+        \item Precision\footnotemark[3]: \dfrac{TP}{TP+FP} %% TP/(TP+FP)
+        \item Recall\footnotemark[3]: \dfrac{TP}{TP+FN} %% TP/(TP+FN)
+        \item Accuracy: \dfrac{TP+TN}{TP+TN+FP+FN} %% Proportion of all predictions that are correct across every class, computed as (TP+TN)/(TP+TN+FP+FN)
+        \item F1-Score: \dfrac{Precision \times Recall}{Precision+Recall} %% Harmonic mean of precision and recall: (Precision * Recall)/(Precision+Recall)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation Metrics \& Results}
+    \textbf{Untuned Models:}
+
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \textbf{Regression Models}
+            \begin{center}
+            \tiny
+            \begin{tabular}{|l|c|c|c|}
+            \hline
+            \textbf{Model} & \textbf{R²} & \textbf{RMSE} & \textbf{MAE} \\
+            \hline
+            Random Forest & 0.7111 & 12.8624 & 7.1484 \\
+            XGBoost & 0.6429 & 14.3012 & 7.4126 \\
+            AdaBoost & 0.6059 & 15.0229 & 10.5256 \\
+            Decision Tree & 0.5813 & 15.4847 & 8.3347 \\
+            SVM & 0.1297 & 22.3262 & 16.6253 \\
+            \hline
+            \end{tabular}
+            \end{center}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \textbf{Classification Models}
+            \begin{center}
+            \tiny
+            \begin{tabular}{|l|c|c|}
+            \hline
+            \textbf{Model} & \textbf{Accuracy} & \textbf{F1-Score} \\
+            \hline
+            XGBoost & 0.7059 & 0.6925 \\
+            Random Forest & 0.6275 & 0.6128 \\
+            Decision Tree & 0.6078 & 0.6214 \\
+            AdaBoost & 0.5882 & 0.5607 \\
+            SVM & 0.4706 & 0.4146 \\
+            \hline
+            \end{tabular}
+            \end{center}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Evaluation Metrics \& Results}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[reg_untuned_best]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/reg_untuned_best.png}
+                \centering
+            \end{figure}
+            \begin{figure}[reg_untuned_worst]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/reg_untuned_worst.png}
+                \centering
+            \end{figure}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[class_untuned_best]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/class_untuned_best.png}
+                \centering
+            \end{figure}
+            \begin{figure}[class_untuned_worst]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/class_untuned_worst.png}
+                \centering
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[shrink=3]{Hyperparameter Tuning - Ranges}
+    \begin{columns}[T]
+        \begin{column}{0.31\textwidth}
+            {\fontsize{6}{7}\selectfont\textbf{Decision Tree}}
+            \begin{center}
+            {\fontsize{4}{5}\selectfont
+            \begin{tabular}{|p{1.4cm}|p{1.2cm}|}
+            \hline
+            \textbf{Param} & \textbf{Values} \\
+            \hline
+            \texttt{max\_depth} & [1, 2, 3, 5, 7, 8, 10, 15, None] \\
+            \hline
+            \texttt{min\_samples\_split} & [1, 2, 3, 5, 7, 9, 10, 12, 13, 15, 20, 25] \\
+            \hline
+            \texttt{min\_samples\_leaf} & [1, 2, 4, 8, 10] \\
+            \hline
+            \texttt{max\_features} & ['sqrt', 'log2', None] \\
+            \hline
+            \texttt{class\_weight} & [None, 'balanced'] \\
+            \hline
+            \end{tabular}}
+            \end{center}
+            {\fontsize{5}{6}\selectfont
+            Combinations: \textbf{Reg:} $\mathbf{1{,}620}$ | \textbf{Class:} $\mathbf{3{,}240}$}
+
+            \vspace{0.2em}
+            {\fontsize{6}{7}\selectfont\textbf{AdaBoost}}
+            \begin{center}
+            {\fontsize{4}{5}\selectfont
+            \begin{tabular}{|p{1.4cm}|p{1.2cm}|}
+            \hline
+            \textbf{Param} & \textbf{Values} \\
+            \hline
+            \texttt{n\_estimators} & [5, 10, 25, 50, 75, 100, 150, 200, 300] \\
+            \hline
+            \texttt{learning\_rate} & [0.001, 0.01, 0.1, 0.3, 10] \\
+            \hline
+            \texttt{loss} & ['linear', 'square', 'exponential'] \\
+            \hline
+            \texttt{random\_state} & [42] \\
+            \hline
+            \end{tabular}}
+            \end{center}
+            {\fontsize{5}{6}\selectfont
+            Combinations: \textbf{Reg:} $\mathbf{135}$ | \textbf{Class:} $\mathbf{45}$}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            {\fontsize{6}{7}\selectfont\textbf{Random Forest}}
+            \begin{center}
+            {\fontsize{4}{5}\selectfont
+            \begin{tabular}{|p{1.4cm}|p{1.2cm}|}
+            \hline
+            \textbf{Param} & \textbf{Values} \\
+            \hline
+            \texttt{n\_estimators} & [5, 10, 25, 50, 75, 100, 150, 200, 300] \\
+            \hline
+            \texttt{max\_depth} & [1, 3, 5, 10, 15, 20, 30, None] \\
+            \hline
+            \texttt{min\_samples\_split} & [1, 3, 5, 7, 10, 20, 25] \\
+            \hline
+            \texttt{min\_samples\_leaf} & [1, 2, 3, 4] \\
+            \hline
+            \texttt{bootstrap} & [True, False] \\
+            \hline
+            \texttt{max\_features} & ['sqrt', 'log2', None] \\
+            \hline
+            \texttt{class\_weight} & [None, 'balanced', 'balanced\_subsample'] \\
+            \hline
+            \end{tabular}}
+            \end{center}
+            {\fontsize{5}{6}\selectfont
+            Combinations: \textbf{Reg:} $\mathbf{12{,}096}$ | \textbf{Class:} $\mathbf{36{,}288}$}
+        \end{column}
+
+        \begin{column}{0.31\textwidth}
+            {\fontsize{6}{7}\selectfont\textbf{XGBoost}}
+            \begin{center}
+            {\fontsize{4}{5}\selectfont
+            \begin{tabular}{|p{1.4cm}|p{1.2cm}|}
+            \hline
+            \textbf{Param} & \textbf{Values} \\
+            \hline
+            \texttt{n\_estimators} & [1, 5, 10, 25, 50, 75, 100, 150, 200] \\
+            \hline
+            \texttt{max\_depth} & [1, 3, 6, 9, 10] \\
+            \hline
+            \texttt{learning\_rate} & [0.01, 0.1, 0.3] \\
+            \hline
+            \texttt{subsample} & [0.8, 1.0] \\
+            \hline
+            \texttt{colsample\_bytree} & [0.8, 1.0] \\
+            \hline
+            \end{tabular}}
+            \end{center}
+            {\fontsize{5}{6}\selectfont
+            Combinations: \textbf{Both:} $\mathbf{540}$}
+
+            \vspace{0.2em}
+            {\fontsize{6}{7}\selectfont\textbf{SVM}}
+            \begin{center}
+            {\fontsize{4}{5}\selectfont
+            \begin{tabular}{|p{1.4cm}|p{1.2cm}|}
+            \hline
+            \textbf{Param} & \textbf{Values} \\
+            \hline
+            \texttt{C} & [0.1, 1, 10] \\
+            \hline
+            \texttt{gamma} & ['scale', 'auto', 0.001, 0.01] \\
+            \hline
+            \texttt{kernel} & ['rbf', 'linear'] \\
+            \hline
+            \texttt{class\_weight} & [None, 'balanced'] \\
+            \hline
+            \end{tabular}}
+            \end{center}
+            {\fontsize{5}{6}\selectfont
+            Combinations: \textbf{Reg:} $\mathbf{24}$ | \textbf{Class:} $\mathbf{48}$}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[shrink=5]{Hyperparameter Tuning - Results}
+    \textbf{GridSearchCV} was utilized to systematically evaluate and identify the optimal hyperparameter combinations. The best-performing configurations are summarized below:
+
+
+    \textbf{Regression Models}
+    \begin{center}
+        \tiny
+        \begin{tabular}{|l|c|c|c|p{5cm}|}
+            \hline
+                \textbf{Model} & \textbf{R²} & \textbf{RMSE} & \textbf{MAE} & \textbf{Best Hyperparameters} \\
+            \hline
+                AdaBoost & 0.7550 & 11.8457 & 7.3079 & lr=0.001, loss='exponential', n\_est=300 \\
+            \hline
+                Decision Tree & 0.7460 & 12.0611 & 6.7837 & max\_depth=5, min\_samples\_leaf=10,\newline min\_samples\_split=2 \\
+            \hline
+                Random Forest & 0.7317 & 12.3955 & 7.0183 & bootstrap=True, max\_depth=10,\newline min\_samples\_leaf=4, min\_samples\_split=10,\newline n\_est=75 \\
+            \hline
+                XGBoost & 0.7050 & 12.9992 & 8.0360 & colsample\_bytree=1.0, lr=0.3,\newline max\_depth=1, n\_est=50, subsample=1.0 \\
+            \hline
+                SVM & 0.2399 & 20.8651 & 14.8728 & C=10, gamma='scale', kernel='rbf' \\
+        \hline
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.5em}
+
+    \textbf{Classification Models}
+    \begin{center}
+    \tiny
+    \begin{tabular}{|l|c|c|p{5cm}|}
+    \hline
+    \textbf{Model} & \textbf{Accuracy} & \textbf{F1-Score} & \textbf{Best Hyperparameters} \\
+    \hline
+    XGBoost & 0.7255 & 0.7037 & colsample\_bytree=0.8, lr=0.3,\newline max\_depth=1, n\_estimators=150,\newline subsample=0.8 \\
+    \hline
+    Decision Tree & 0.6667 & 0.6645 & class\_weight=None, max\_depth=7,\newline min\_samples\_leaf=2, min\_samples\_split=10 \\
+    \hline
+    Random Forest & 0.6667 & 0.6533 & bootstrap=False, class\_weight=None,\newline max\_depth=10, min\_samples\_leaf=2,\newline min\_samples\_split=10, n\_estimators=5 \\
+    \hline
+    SVM & 0.5882 & 0.5645 & C=10, class\_weight='balanced',\newline gamma='auto', kernel='rbf' \\
+    \hline
+    AdaBoost & 0.5882 & 0.4943 & lr=0.001, n\_estimators=5 \\
+    \hline
+    \end{tabular}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Hyperparameter Tuning - Visualization}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[reg_tuned_best]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/reg_tuned_best.png}
+                \centering
+            \end{figure}
+            \begin{figure}[reg_tuned_worst]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/reg_tuned_worst.png}
+                \centering
+            \end{figure}
+        \end{column}
+
+        \begin{column}{0.48\textwidth}
+            \begin{figure}[class_tuned_best]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/class_tuned_best.png}
+                \centering
+            \end{figure}
+            \begin{figure}[class_tuned_worst]
+                \centering
+                    \includegraphics[width=0.85\textwidth,height=0.35\textheight,keepaspectratio]{figures/class_tuned_worst.png}
+                \centering
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+    
+\begin{frame}[shrink=10]{Optimal Model Selection}
+
+    \textbf{Regression}
+    \begin{center}
+        \begin{tabular}{|l|c|c|c|p{5cm}|}
+            \hline
+                \textbf{Model} & \textbf{R²} & \textbf{RMSE} & \textbf{MAE} & \textbf{Best Hyperparameters} \\
+            \hline
+                AdaBoost (Tuned) & 0.7550 & 11.8457 & 7.3079 & lr=0.001,\newline loss='exponential',\newline n\_est=300 \\
+            \hline
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.5em}
+
+    \textbf{Classification}
+    \begin{center}
+        \begin{tabular}{|l|c|c|p{5cm}|}
+            \hline
+                \textbf{Model} & \textbf{Accuracy} & \textbf{F1-Score} & \textbf{Best Hyperparameters} \\
+            \hline
+                XGBoost (Tuned) & 0.7255 & 0.7037 & colsample\_bytree=0.8,\newline lr=0.3,\newline max\_depth=1,\newline n\_est=150,\newline subsample=0.8 \\
+            \hline
+        \end{tabular}
+    \end{center}
+
+    \vspace{0.5em}
+    \textbf{Feature importance} for Regression: \texttt{scope1+2total} (0.838), \texttt{brands} (0.135), \texttt{scope2emit...} (0.027). for classification with a better balance: \texttt{brands} (0.410), \texttt{scope1+2total} (0.330), \texttt{scope2emit...} (0.260). The \texttt{brands} feature proved valuable for risk categorization.
+\end{frame}
+
+\begin{frame}[shrink=7]{Conclusion}
+    This project demonstrates \textbf{Supervised Learning} effectiveness for predicting \textbf{ESG scores} and categorizing \textbf{ESG Risk}, in special the power of ensemble models.
+
+    \vspace{0.5em}
+    I was also able to meet the \textbf{expected deliverables} expectation: One optimal model for ESG Score prediction (regression) one optimal model for ESG Sustainability Risk classification (multi-class classification), a comparative analysis of model performance, hyperparameter optimization results, and feature importance analysis
+
+    \vspace{0.5em}
+    This investigation highlights machine learning potential in \textbf{ESG analytics} and the critical need for diversified features. Future work should incorporate additional environmental, social, and governance variables for robust, interpretable models.
+\end{frame}
+
+\begin{frame}{Appendix - Scatterplot}
+    \begin{center}
+        \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/scatter_plot_001.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Appendix - Correlation Heatmap}
+    \begin{center}
+        \includegraphics[width=0.85\textwidth,height=0.75\textheight,keepaspectratio]{figures/correlation_002.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{References}
+    \footnotesize
+    \textbf{Tools \& Resources:}
+    \begin{itemize}
+        \item \href{https://scikit-learn.org/}{\textbf{Scikit-Learn}}: Machine learning library for classification, regression, and model evaluation
+        \item \href{https://matplotlib.org/}{\textbf{Matplotlib}}: Comprehensive visualization library for creating static, animated, and interactive plots
+        \item \href{https://seaborn.pydata.org/}{\textbf{Seaborn}}: Statistical data visualization library based on Matplotlib
+        \item \href{https://github.com/dyegofern/latex_presentation_generator}{\textbf{LaTeX Presentation Generator}}: A generic Beamer presentation generator that extracts content from Jupyter notebooks. This tool was used to generate the initial structure of this presentation.
+    \end{itemize}
+
+    \footnotetext[1]{The dataset used in this project originates from the \href{https://www.ghgshopper.org}{\textbf{GHG Shopper}} and \href{https://www.stakeholdertakeover.org}{\textbf{Stakeholder Takeover}} initiatives.}
+    \footnotetext[2]{SVM as an alternative non-emsamble, non-tree based model.}
+    \footnotetext[3]{Used indirectly to calculate F-1 score.}
+    \footnotetext[4]{\href{https://www.kaggle.com}{\textbf{Kaggle}}: Platform for datasets, model sharing, and competitions. The \href{https://www.kaggle.com/learn/intro-to-machine-learning}{\textbf{Introduction to Machine Learning}} course influenced exploratory workflow and early modeling choices.}
+    \footnotetext[5]{Grigorev, Alexey. \emph{Machine Learning Bookcamp: Build a portfolio of real-life projects}. Manning Publications, 2021. The use of XGBoost in this work was inspired by practical guidance and the dedicated chapter in this book.}
+    \footnotetext[6]{James, G., et al (2023). \textit{An Introduction to Statistical Learning: with Applications in Python}. Springer. Source for statistical metrics and model evaluation formulas.}
+\end{frame}
+
+\begin{frame}{Bonus - Synthetic Dataset}
+    A \textbf{synthetic dataset} containing over 50,000 rows has been generated for further experimentation.\\This dataset can be utilized by modifying the Jupyter notebook accordingly:
+    \CODE{bonus.py}
+\end{frame}
+
+\end{document}
