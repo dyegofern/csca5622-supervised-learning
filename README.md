@@ -2,6 +2,12 @@
 
 Master's degree coursework project for **Introduction to Supervised Learning** at the University of Colorado Boulder.
 
+!!! Youtube video: https://www.youtube.com/watch?v=qhxeP6wTJHE
+
+!!! GitHub Repository: https://github.com/dyegofern/csca5622-supervised-learning
+
+!!! Slides: https://github.com/dyegofern/csca5622-supervised-learning/blob/master/presentation/esg_presentation_final.pdf
+
 ## Overview
 
 This project showcases supervised learning techniques and models to perform both **Regression** and **Classification** tasks on real-world ESG data. The implementation includes comprehensive data preprocessing, feature engineering, model training, hyperparameter optimization, and performance evaluation.
